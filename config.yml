@@ -1,0 +1,48 @@
+version: 2.1
+
+orbs:
+  continuation: circleci/continuation@0.1.4  # Import the Continuation Orb
+
+workflows:
+  setup:
+    jobs:
+      - setup-job
+
+jobs:
+  setup-job:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - run:
+          name: Check Condition for Continuation
+          command: |
+            # Check an environment variable or parameter (e.g., CONTINUE_PIPELINE)
+            if [ "${CONTINUE_PIPELINE}" = "true" ]; then
+              echo "Continuing pipeline..."
+              # Generate the continuation configuration file dynamically
+              cat <<EOF > continuation-config.yml
+              version: 2.1
+              workflows:
+                continued-workflow:
+                  jobs:
+                    - print-message
+              EOF
+              # Use the Continuation Orb to continue the pipeline
+              circleci-agent step halt  # Halt this step before continuation
+            else
+              echo "Skipping continuation..."
+            fi
+
+      - continuation/continue:
+          configuration_path: continuation-config.yml  # Path to the dynamically generated continuation config
+          parameters: {}  # Optional: Add any continuation parameters if needed
+
+jobs:
+  print-message:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: Print Message
+          command: echo "This is a continued pipeline job!"

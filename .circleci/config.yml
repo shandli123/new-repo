@@ -1,31 +1,49 @@
-# Use the latest 2.1 version of CircleCI pipeline process engine.
-# See: https://circleci.com/docs/configuration-reference
 version: 2.1
 
-# Define a job to be invoked later in a workflow.
-# See: https://circleci.com/docs/jobs-steps/#jobs-overview & https://circleci.com/docs/configuration-reference/#jobs
-jobs:
-  say-hello:
-    # Specify the execution environment. You can specify an image from Docker Hub or use one of our convenience images from CircleCI's Developer Hub.
-    # See: https://circleci.com/docs/executor-intro/ & https://circleci.com/docs/configuration-reference/#executor-job
-    docker:
-      # Specify the version you desire here
-      # See: https://circleci.com/developer/images/image/cimg/base
-      - image: cimg/base:current
+orbs:
+  continuation: circleci/continuation@0.1.4  # Import the Continuation Orb
 
-    # Add steps to the job
-    # See: https://circleci.com/docs/jobs-steps/#steps-overview & https://circleci.com/docs/configuration-reference/#steps
+workflows:
+  setup:
+    jobs:
+      - setup-job
+
+jobs:
+  setup-job:
+    docker:
+      - image: cimg/base:stable
     steps:
-      # Checkout the code as the first step.
       - checkout
       - run:
-          name: "Say hello"
-          command: "echo Hello, World!"
+          name: Check Condition for Continuation
+          command: |
+            # Check an environment variable or parameter (e.g., CONTINUE_PIPELINE)
+            if [ "${CONTINUE_PIPELINE}" = "true" ]; then
+              echo "Continuing pipeline..."
+              # Generate the continuation configuration file dynamically
+              cat <<EOF > continuation-config.yml
+              version: 2.1
+              workflows:
+                continued-workflow:
+                  jobs:
+                    - print-message
+              EOF
+              # Use the Continuation Orb to continue the pipeline
+              circleci-agent step halt  # Halt this step before continuation
+            else
+              echo "Skipping continuation..."
+            fi
 
-# Orchestrate jobs using workflows
-# See: https://circleci.com/docs/workflows/ & https://circleci.com/docs/configuration-reference/#workflows
-workflows:
-  say-hello-workflow: # This is the name of the workflow, feel free to change it to better match your workflow.
-    # Inside the workflow, you define the jobs you want to run.
-    jobs:
-      - say-hello
+      - continuation/continue:
+          configuration_path: continuation-config.yml  # Path to the dynamically generated continuation config
+          parameters: {}  # Optional: Add any continuation parameters if needed
+
+jobs:
+  print-message:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - run:
+          name: Print Message
+          command: echo "This is a continued pipeline job!"
+          

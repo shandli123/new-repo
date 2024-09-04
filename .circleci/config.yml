@@ -22,12 +22,12 @@ jobs:
               echo "Continuing pipeline..."
               # Generate the continuation configuration file dynamically
               cat <<EOF > continuation-config.yml
-              version: 2.1
-              workflows:
-                continued-workflow:
-                  jobs:
-                    - print-message
-              EOF
+version: 2.1
+workflows:
+  continued-workflow:
+    jobs:
+      - print-message
+EOF
               # Use the Continuation Orb to continue the pipeline
               circleci-agent step halt  # Halt this step before continuation
             else
@@ -46,4 +46,3 @@ jobs:
       - run:
           name: Print Message
           command: echo "This is a continued pipeline job!"
-          

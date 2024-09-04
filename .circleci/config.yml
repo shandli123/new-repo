@@ -20,14 +20,19 @@ jobs:
             # Check an environment variable or parameter (e.g., CONTINUE_PIPELINE)
             if [ "${CONTINUE_PIPELINE}" = "true" ]; then
               echo "Continuing pipeline..."
+              
               # Generate the continuation configuration file dynamically
-              cat <<EOF > continuation-config.yml
+              cat <<'EOF' > continuation-config.yml
 version: 2.1
 workflows:
   continued-workflow:
     jobs:
       - print-message
 EOF
+
+              # Display the content of the continuation config file
+              cat continuation-config.yml
+
               # Use the Continuation Orb to continue the pipeline
               circleci-agent step halt  # Halt this step before continuation
             else

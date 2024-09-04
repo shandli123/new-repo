@@ -1,0 +1,5 @@
+version: 2.1
+workflows:
+  continued-workflow:
+    jobs:
+      - print-message
